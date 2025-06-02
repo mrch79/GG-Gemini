@@ -1,0 +1,30 @@
+# Etapa de construcción
+FROM node:18-bullseye AS builder
+
+WORKDIR /app
+
+# Copiar todo, incluyendo node_modules preinstalados
+COPY . .
+
+# Construir la aplicación (asumiendo que node_modules ya está presente)
+RUN npm run build
+
+# Etapa de producción
+FROM node:18-bullseye-slim AS runner
+
+WORKDIR /app
+
+# Copiar package.json y node_modules preinstalados
+COPY package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copiar archivos de construcción desde la etapa anterior
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./
+
+# Exponer el puerto
+EXPOSE 3000
+
+# Iniciar la aplicación
+CMD ["npm", "start"]
